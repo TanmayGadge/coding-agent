@@ -1,0 +1,8 @@
+.env
+test.py
+output*.txt
+__pycache__
+*output*.txt
+workspace/
+*.pckl
+file_system

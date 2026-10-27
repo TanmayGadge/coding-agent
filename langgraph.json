@@ -1,0 +1,7 @@
+{
+  "dependencies": ["."],
+  "graphs": {
+    "orchestrator": "./main.py:main_app"
+  },
+  "env": ".env"
+}
