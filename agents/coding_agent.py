@@ -111,40 +111,54 @@ class FileAgentOutput(BaseModel):
 def save_code_in_file(state: CodingAgentState):
     global SCRIPT_DIR
     code = state.code
+    code_path = state.code_path
     
-    system_msg = SystemMessage(
-        content="You are a file naming agent.\n"
-        "Your job to to create a dynamic filename for the python code file based on the given coding plan.\n"
-        "Make sure that the file name is short, readable and relevant to the actual coding plan provided by the user.\n"
-        "Follow the following naming convention for the python code file:\n"
-        "1. Follow the snake_case convention.\n"
-        "2. Use underscores to separate multiple words (e.g. kv_cache_store.py).\n"
-        "3. Keep it short. It is highly preferable to stick to short, concise, one-word or two-word names.\n"
-        "4. DON'T add the '.py' file extention at the end.\n"
-        "5. Keep all the letters in filename strictly lowercase.\n"
-        "6. NEVER use hyphens or dashes (-) to separate multiple words in a filename. Only use underscores\n"
-    )
+    if code_path and len(str(code_path).strip()) > 0:
+        absolute_code_filepath = Path(code_path)
+        with open(absolute_code_filepath, 'w', encoding='utf-8') as file:
+            file.write(code)
+        file.close()
+        
+        print(f"Code written to {absolute_code_filepath} successfully!")
+        
+        return {"code_path": str(absolute_code_filepath)}
+    else:
+        system_msg = SystemMessage(
+            content="You are a file naming agent.\n"
+            "Your job to to create a dynamic filename for the python code file based on the given coding plan.\n"
+            "Make sure that the file name is short, readable and relevant to the actual coding plan provided by the user.\n"
+            "Follow the following naming convention for the python code file:\n"
+            "1. Follow the snake_case convention.\n"
+            "2. Use underscores to separate multiple words (e.g. kv_cache_store.py).\n"
+            "3. Keep it short. It is highly preferable to stick to short, concise, one-word or two-word names.\n"
+            "4. DON'T add the '.py' file extention at the end.\n"
+            "5. Keep all the letters in filename strictly lowercase.\n"
+            "6. NEVER use hyphens or dashes (-) to separate multiple words in a filename. Only use underscores\n"
+            "7. If the coding plan is for a profile finder app, then keep the filename as [platform_name]_profile_finder (e.g. facebook_profile_finde)\n"
+        )
+        
+        user_msg = HumanMessage(
+            content="Take the following coding plan and create a filename for it.\n"
+            "Coding plan(separated by triple backticks):\n"
+            f"```{state.coding_plan}```"
+        )
+        
+        structured_model = model.with_structured_output(FileAgentOutput)
+        response = cast(FileAgentOutput, structured_model.invoke([system_msg, user_msg]))
+        file_name = response.filename
+        
+        relative_filepath = f"../workspace/code_files/{file_name}.py"
+        absolute_code_filepath = (SCRIPT_DIR / relative_filepath).resolve()
+        
+        with open(absolute_code_filepath, 'w', encoding='utf-8') as file:
+            file.write(code)
+        file.close()
+        
+        print(f"Code written to {absolute_code_filepath} successfully!")
+        
+        return {"code_path": str(absolute_code_filepath)}
+        
     
-    user_msg = HumanMessage(
-        content="Take the following coding plan and create a filename for it.\n"
-        "Coding plan(separated by triple backticks):\n"
-        f"```{state.coding_plan}```"
-    )
-    structured_model = model.with_structured_output(FileAgentOutput)
-    response = cast(FileAgentOutput, structured_model.invoke([system_msg, user_msg]))
-    file_name = response.filename
-    
-    
-    relative_filepath = f"../workspace/code_files/{file_name}.py"
-    absolute_code_filepath = (SCRIPT_DIR / relative_filepath).resolve()
-    
-    with open(absolute_code_filepath, 'w', encoding='utf-8') as file:
-        file.write(code)
-    file.close()
-    
-    print(f"Code written to {absolute_code_filepath} successfully!")
-    
-    return {"code_path": str(absolute_code_filepath)}
     
 graph = StateGraph(CodingAgentState)
 graph.add_node('coding_agent', coding_agent_node)
