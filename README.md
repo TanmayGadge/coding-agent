@@ -6,4 +6,7 @@ Implements following agents:
 4. Coding Agent: Writes code for the given implementation plan. 
 5. Testing Agent: Performs Unit, Integration & System tests on the code. Re-routes to the coding agent if tests fail.
 
+Under Development:
+- Token Tracker: Tracks token usage in real time.
+
 Implemented message streaming via the stream_events API (v3) from LangGraph.
